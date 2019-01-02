@@ -5,11 +5,12 @@ int main(int argc, char *argv[]) {
   // Regular MIOpen housekeeping
   device_init();
   miopenEnableProfiling(mio::handle(), true);
-
-  Tensor input(16, 128, 16,
-               16); // batch size = 16, input channels = 3, image size = 16 x 16
+  int kernel_sz = 1;
+  int image_sz = 224;
+  Tensor input(16, 128, image_sz,
+		  image_sz); // batch size = 16, input channels = 3, image size = 16 x 16
   Tensor output;
-  Tensor weights(1, 128, 3, 3); // kernel size = 3 x 3
+  Tensor weights(1, 128, kernel_sz, kernel_sz); // kernel size = 3 x 3
   Tensor bias;
   miopenConvolutionDescriptor_t conv_desc;
 
@@ -62,10 +63,10 @@ int main(int argc, char *argv[]) {
 
   // The same fusion plan may be reused with new arguments without a re-compile
   Tensor input2(
-      16, 128, 16,
-      16); // batch size = 16, input channels = 3, image size = 16 x 16
+      16, 128, image_sz,
+	  image_sz); // batch size = 16, input channels = 3, image size = 16 x 16
   Tensor output2(n, c, h, w);
-  Tensor weights2(1, 128, 3, 3); // kernel size = 3 x 3
+  Tensor weights2(1, 128, kernel_sz, kernel_sz); // kernel size = 3 x 3
   Tensor bias2(1, c, 1, 1);
 
   input2.uniform();
