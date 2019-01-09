@@ -11,8 +11,7 @@ int main(int argc, char *argv[]) {
   Tensor weights1(64, 64, 1, 1); // 64 kernel of size 64 x 1 x 1
   Tensor bias1(1, 64, 1, 1);//   1, 64, 1, 1
 
-  // The same fusion plan may be reused with new arguments without a re-compile
-  //Tensor input2( 1, 64, 56, 56); // batch size = 16, input channels = 128, image size = 16 x 16
+  //Tensor input2( 1, 64, 56, 56); // batch size = 1, input channels = 64, image size = 56 x 56
   Tensor output2(1, 64, 56, 56); // 1, 64, 56, 56
   Tensor weights2(64, 64, 3, 3); // 64 kernel of size 64 x 3 x 3
   Tensor bias2(1, 64, 1, 1);//   1, 64, 1, 1
@@ -93,8 +92,16 @@ int main(int argc, char *argv[]) {
   // possibly in a loop but with new values for the tensors to be meaningful
   // Here we use the same values to keep the code simple
   for (auto idx = 0; idx < 1000; idx++) {
-	miopenExecuteFusionPlan(mio::handle(), fusePlanDesc1, input1.desc, input1.data, output1.desc, output1.data, fusionArgs1);
-    miopenExecuteFusionPlan(mio::handle(), fusePlanDesc2, output1.desc, output1.data, output2.desc, output2.data, fusionArgs2);
+	//input1.uniform();
+	//weights1.uniform();
+	//weights2.uniform();
+	if(auto ret = miopenExecuteFusionPlan(mio::handle(), fusePlanDesc1, input1.desc, input1.data, output1.desc, output1.data, fusionArgs1); ret != miopenStatusSuccess) {
+		printf("Error while executing first fusion %d\n", ret);
+	}
+    if(auto ret = miopenExecuteFusionPlan(mio::handle(), fusePlanDesc2, output1.desc, output1.data, output2.desc, output2.data, fusionArgs2); ret != miopenStatusSuccess) {
+    	printf("Error while executing second fusion %d\n", ret);
+    }
+    hipDeviceSynchronize();
     output2.toHost();
   }
 
