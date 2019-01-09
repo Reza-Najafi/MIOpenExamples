@@ -95,6 +95,7 @@ int main(int argc, char *argv[]) {
   for (auto idx = 0; idx < 1000; idx++) {
 	miopenExecuteFusionPlan(mio::handle(), fusePlanDesc1, input1.desc, input1.data, output1.desc, output1.data, fusionArgs1);
     miopenExecuteFusionPlan(mio::handle(), fusePlanDesc2, output1.desc, output1.data, output2.desc, output2.data, fusionArgs2);
+    output2.toHost();
   }
 
   // Cleanup

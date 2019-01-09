@@ -179,6 +179,7 @@ struct Device {
   /// The paths are found using hiDeviceProp_t::pciBusID
   void init_sys_paths() {
     bool found = false;
+#if 0
     for (std::string cardname :
          ls_dir("/sys/class/drm", std::regex("card\\d+"))) {
       std::string carddir = "/sys/class/drm/" + cardname;
@@ -212,6 +213,7 @@ struct Device {
       if (found)
         break;
     }
+#endif
     if (!found) {
       WARNING("Can't find sysfs path for device " << hip_id);
     }
