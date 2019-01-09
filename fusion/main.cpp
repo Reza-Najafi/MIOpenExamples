@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 	  // Get the convolution output dimensions
 	  int n, c, h, w;
 	  miopenGetConvolutionForwardOutputDim(conv_desc1, input1.desc, weights1.desc, &n, &c, &h, &w);
-	  assert(n==64 && c == 64 && h ==56 && w ==56 );// Just making sure
+	  assert(n==1 && c == 64 && h ==56 && w ==56 );// Just making sure
 	  // Create the fusion plan
 	  miopenCreateFusionPlan(&fusePlanDesc1, miopenVerticalFusion, input1.desc);
 	  miopenCreateOperatorArgs(&fusionArgs1);
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 	  // Get the convolution output dimensions
 	  int n, c, h, w;
 	  miopenGetConvolutionForwardOutputDim(conv_desc2, output1.desc, weights2.desc, &n, &c, &h, &w);
-	  assert(n==64 && c == 64 && h ==56 && w ==56 );// Just making sure
+	  assert(n==1 && c == 64 && h ==56 && w ==56 );// Just making sure
 	  // Create the fusion plan
 	  miopenCreateFusionPlan(&fusePlanDesc2, miopenVerticalFusion, output1.desc);
 	  miopenCreateOperatorArgs(&fusionArgs2);
@@ -84,15 +84,15 @@ int main(int argc, char *argv[]) {
 	  float activ_alpha = static_cast<float>(1), activ_beta = static_cast<float>(0), activ_gamma = static_cast<float>(1);
 
 	  // Set the Args
-	  miopenSetOpArgsConvForward(fusionArgs1, convoOp1, &alpha, &beta, weights1.data);
-	  miopenSetOpArgsActivForward(fusionArgs1, activOp1, &alpha, &beta, activ_alpha, activ_beta, activ_gamma);
-	  miopenSetOpArgsBiasForward(fusionArgs1, biasOp1, &alpha, &beta, bias1.data);
+	  miopenSetOpArgsConvForward(fusionArgs2, convoOp2, &alpha, &beta, weights2.data);
+	  miopenSetOpArgsActivForward(fusionArgs2, activOp2, &alpha, &beta, activ_alpha, activ_beta, activ_gamma);
+	  miopenSetOpArgsBiasForward(fusionArgs2, biasOp2, &alpha, &beta, bias2.data);
 	  weights2.uniform();
   }
 
   // possibly in a loop but with new values for the tensors to be meaningful
   // Here we use the same values to keep the code simple
-  for (auto idx = 0; idx < 100; idx++) {
+  for (auto idx = 0; idx < 1000; idx++) {
 	miopenExecuteFusionPlan(mio::handle(), fusePlanDesc1, input1.desc, input1.data, output1.desc, output1.data, fusionArgs1);
     miopenExecuteFusionPlan(mio::handle(), fusePlanDesc2, output1.desc, output1.data, output2.desc, output2.data, fusionArgs2);
   }
