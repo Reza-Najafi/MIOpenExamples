@@ -4,7 +4,7 @@
 int main(int argc, char *argv[]) {
   // Regular MIOpen housekeeping
   device_init();
-  miopenEnableProfiling(mio::handle(), true);
+  miopenEnableProfiling(mio::instance()->handle(), true);
   //Tensor (n,c,h,w)
   Tensor input1(1, 64, 56, 56); // batch size = 1, input channels = 64, image size = 56 x 56
   Tensor output1(1, 64, 56, 56);// 1, 64, 56, 56
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 	  miopenCreateOpActivationForward(fusePlanDesc1, &activOp1, miopenActivationRELU);
 
 	  // compile fusion plan
-	  auto status = miopenCompileFusionPlan(mio::handle(), fusePlanDesc1);
+	  auto status = miopenCompileFusionPlan(mio::instance()->handle(), fusePlanDesc1);
 	  if (status != miopenStatusSuccess) {
 		return -1;
 	  }
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 	  miopenCreateOpActivationForward(fusePlanDesc2, &activOp2, miopenActivationRELU);
 
 	  // compile fusion plan
-	  auto status = miopenCompileFusionPlan(mio::handle(), fusePlanDesc2);
+	  auto status = miopenCompileFusionPlan(mio::instance()->handle(), fusePlanDesc2);
 	  if (status != miopenStatusSuccess) { return -1; }
 	  float alpha = static_cast<float>(1), beta = static_cast<float>(0);
 	  float activ_alpha = static_cast<float>(1), activ_beta = static_cast<float>(0), activ_gamma = static_cast<float>(1);
@@ -95,14 +95,14 @@ int main(int argc, char *argv[]) {
 	//input1.uniform();
 	//weights1.uniform();
 	//weights2.uniform();
-	if(auto ret = miopenExecuteFusionPlan(mio::handle(), fusePlanDesc1, input1.desc, input1.data, output1.desc, output1.data, fusionArgs1); ret != miopenStatusSuccess) {
+	if(auto ret = miopenExecuteFusionPlan(mio::instance()->handle(), fusePlanDesc1, input1.desc, input1.data, output1.desc, output1.data, fusionArgs1); ret != miopenStatusSuccess) {
 		printf("Error while executing first fusion %d\n", ret);
 	}
-    if(auto ret = miopenExecuteFusionPlan(mio::handle(), fusePlanDesc2, output1.desc, output1.data, output2.desc, output2.data, fusionArgs2); ret != miopenStatusSuccess) {
+    if(auto ret = miopenExecuteFusionPlan(mio::instance()->handle(), fusePlanDesc2, output1.desc, output1.data, output2.desc, output2.data, fusionArgs2); ret != miopenStatusSuccess) {
     	printf("Error while executing second fusion %d\n", ret);
     }
-    hipDeviceSynchronize();
-    output2.toHost();
+    clFinish(mio::instance()->GetStream());
+    //output2.toHost();
   }
 
   // Cleanup

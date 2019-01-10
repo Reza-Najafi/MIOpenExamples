@@ -174,13 +174,19 @@ struct Tensor : public TensorDesc {
 
   std::vector<float> toHost() {
     std::vector<float> x(data_size / sizeof(float));
+#ifdef WITH_CL
+    if(int err = clEnqueueWriteBuffer(mio::instance()->GetStream(), data, CL_FALSE, 0,data_size, &x[0], 0, NULL, NULL); err != CL_SUCCESS){
+    	printf("Error call into clEnqueueWriteBuffer %d \n", err);
+    }
+#else
     hipMemcpyDtoH(&x[0], data, data_size);
+#endif
     return x;
   }
 
   void fromHost(const std::vector<float> &h) {
-    hipMemcpyHtoD(data, (void *)h.data(), data_size);
-    hipDeviceSynchronize();
+    //hipMemcpyHtoD(data, (void *)h.data(), data_size);
+    //hipDeviceSynchronize();
   }
 
   void print_data() {
@@ -215,7 +221,11 @@ struct Tensor : public TensorDesc {
   void uniform() {
     std::vector<float> h(data_size / sizeof(float));
     std::generate(h.begin(), h.end(), []() { return rand() * 1.f / RAND_MAX; });
+#ifdef WITH_CL
+    clEnqueueWriteBuffer(mio::instance()->GetStream(), data, CL_FALSE, 0,data_size, h.data(), 0, NULL, NULL);
+#else
     hipMemcpyHtoD(data, h.data(), data_size);
+#endif
   }
 
   Tensor(TensorDesc &&d)

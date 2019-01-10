@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-//#define WITH_CL
+#define WITH_CL
 
 #define DEBUG(msg) std::cerr << "[DEBUG] " << msg << std::endl;
 #define WARNING(msg) std::cerr << "[!WARNING!] " << msg << std::endl;
@@ -38,8 +38,21 @@ struct ClHandle {
 
   static std::vector<cl::Device>
   getDevices(const std::vector<cl::Platform> &platforms) {
+	// cl::Platform chosen_plat;
+    printf("Number of OCL platform %d\n", platforms.size());
+	for(auto& plt : platforms){
+		std::string param;
+		plt.getInfo(CL_PLATFORM_NAME, &param);
+		printf("Platform name %s\n", param.c_str());
+	}
     std::vector<cl::Device> devs;
     platforms[0].getDevices(CL_DEVICE_TYPE_ALL, &devs);
+    printf("Number of OCL devices %d\n", devs.size());
+    for(auto& dev: devs){
+    	std::string name;
+    	dev.getInfo(CL_DEVICE_NAME, &name);
+    	printf("Device name %s\n", name.c_str());
+    }
     return devs;
   }
 
@@ -53,7 +66,8 @@ struct ClHandle {
 
 device_mem_t device_alloc(size_t size) {
   cl_int err;
-  cl_mem buf = clCreateBuffer(ClHandle::get_handle(), CL_MEM_READ_WRITE, size,
+  cl_context clctx = ClHandle::get_handle();
+  cl_mem buf = clCreateBuffer(clctx , CL_MEM_READ_WRITE, size,
                               NULL, &err);
   if (err) {
     fprintf(stderr, "error: opencl couldn't allocate buffer, error code: %i",
@@ -321,31 +335,58 @@ const char *mio_err[] = {"StatusSuccess        ", "StatusNotInitialized ",
   }
 
 // get miopenHandle globally via `mio::handle()`
+
 struct mio {
 private:
-  // This is called once, the first time the MIOpen handle is retrieved
-  static miopenHandle_t init_mio() {
-    miopenHandle_t h;
-    CHECK_HIP(hipSetDevice(Devices::get_default_device().hip_id));
-    hipStream_t q;
-    CHECK_HIP(hipStreamCreate(&q));
-    CHECK_MIO(miopenCreateWithStream(&h, q));
-    return h;
-  }
+	mio(){init_mio();}
+
+	static mio* inst;
+	miopenHandle_t h;
+
+#ifdef WITH_CL
+	cl_command_queue q;
+#elif MIOPEN_BACKEND_HIP
+	hipStream_t q;
+#endif
+
+
+	void init_mio() {
+#ifdef WITH_CL
+		miopenCreate(&h);
+#elif MIOPEN_BACKEND_HIP
+		CHECK_HIP(hipSetDevice(Devices::get_default_device().hip_id));
+		CHECK_HIP(hipStreamCreate(&q));
+		CHECK_MIO(miopenCreateWithStream(&h, q));
+#endif
+		miopenGetStream(h, &q);
+	}
 
 public:
-  static miopenHandle_t handle() {
-    static miopenHandle_t h = init_mio();
-    return h;
-  }
+	virtual ~mio() { miopenDestroy(h); delete mio::inst;}
+	static mio* instance() {
+		if(mio::inst == NULL){
+			mio::inst = new mio;
+		}
+		return mio::inst;
+	}
+
+	miopenHandle_t handle() { return h; }
+
+#if MIOPEN_BACKEND_OPENCL
+	cl_command_queue& GetStream() { return q;}
+#elif MIOPEN_BACKEND_HIP
+	hipStream_t& GetStream() {return q;}
+#endif
+
 };
+mio* mio::inst = NULL;
 
-float getTemp() { return Devices::get_default_device().getTemp(); }
+//float getTemp() { return Devices::get_default_device().getTemp(); }
 
-int getFanspeed() { return Devices::get_default_device().getFanspeed(); }
+//int getFanspeed() { return Devices::get_default_device().getFanspeed(); }
 
-int getClock() { return Devices::get_default_device().getClock(); }
+//int getClock() { return Devices::get_default_device().getClock(); }
 
-int getMemClock() { return Devices::get_default_device().getMemClock(); }
+//int getMemClock() { return Devices::get_default_device().getMemClock(); }
 
 #endif // MY_MIOPEN_HPP
