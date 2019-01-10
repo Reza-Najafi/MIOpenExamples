@@ -4,7 +4,7 @@
 int main(int argc, char *argv[]) {
   // Regular MIOpen housekeeping
   device_init();
-  miopenEnableProfiling(mio::instance()->handle(), true);
+  //miopenEnableProfiling(mio::instance()->handle(), true);
   //Tensor (n,c,h,w)
   Tensor input1(1, 64, 56, 56); // batch size = 1, input channels = 64, image size = 56 x 56
   Tensor output1(1, 64, 56, 56);// 1, 64, 56, 56
